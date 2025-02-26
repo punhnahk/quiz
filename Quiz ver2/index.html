@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Quiz Math</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body
+    class="bg-gray-900 flex flex-col items-center justify-center h-screen text-white font-pixel"
+  >
+    <div
+      class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md text-center border-4 border-yellow-400"
+    >
+      <h2 class="text-xl font-bold">Score: <span id="score">0</span></h2>
+      <div id="question" class="mt-4 text-lg font-semibold"></div>
+      <form id="input-form" onsubmit="checkInputAnswer(event)">
+        <input
+          required
+          id="answer"
+          name="answer"
+          type="number"
+          placeholder="Enter your answer"
+          class="border p-2 w-full rounded text-black"
+        />
+        <button
+          class="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-700"
+          type="submit"
+        >
+          Submit
+        </button>
+      </form>
+
+      <div id="choices" class="mt-4 space-y-2 hidden"></div>
+      <button
+        onclick="nextQuestion()"
+        id="next-btn"
+        class="bg-green-500 text-white px-4 py-2 rounded mt-4 hidden hover:bg-green-700"
+      >
+        Next Question
+      </button>
+    </div>
+
+    <div
+      id="toast"
+      class="fixed bottom-10 right-5 px-4 py-2 text-lg font-bold rounded bg-white text-black hidden shadow-lg"
+    ></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
