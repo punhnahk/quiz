@@ -1,4 +1,5 @@
 let score = 0;
+
 let currentQuestion = {};
 
 function createQuestion() {
@@ -19,7 +20,7 @@ function createQuestion() {
       correctAnswer = num1 * num2;
       break;
     case "/":
-      correctAnswer = (num1 / num2).toFixed(1);
+      correctAnswer = Math.floor(num1 / num2);
       break;
   }
 
@@ -37,8 +38,8 @@ function createQuestion() {
       let offset = Math.floor(Math.random() * 5) + 1;
       let wrongAnswer =
         operation === "/"
-          ? (correctAnswer + (Math.random() * 2 - 1)).toFixed(2)
-          : correctAnswer + (Math.random() > 0.5 ? offset : -offset);
+          ? correctAnswer + Math.floor(Math.random() * 2 - 1)
+          : correctAnswer + Math.floor(Math.random() > 0.5 ? offset : -offset);
       options.add(wrongAnswer.toString());
     }
 
@@ -74,7 +75,6 @@ function showQuestion() {
     choicesContainer.classList.remove("hidden");
     document.getElementById("input-form").classList.add("hidden");
   }
-  document.getElementById("next-btn").classList.add("hidden");
 }
 
 function showResult(message, isCorrect) {
@@ -91,7 +91,6 @@ function showResult(message, isCorrect) {
 function checkInputAnswer(event) {
   event.preventDefault();
   const answer = document.getElementById("answer").value;
-
   if (answer === currentQuestion.correctAnswer) {
     score++;
     document.getElementById("score").innerText = score;
@@ -102,44 +101,43 @@ function checkInputAnswer(event) {
       false
     );
   }
-  document.getElementById("next-btn").classList.remove("hidden");
+  document.getElementById("answer").disabled = true;
+  setTimeout(() => {
+    nextQuestion();
+  }, 1000);
 }
 
 function checkChoiceAnswer(selectedAnswer) {
   let buttons = document.querySelectorAll("#choices button");
-
   for (let btn of buttons) {
-    if (Number(btn.innerText) === currentQuestion.correctAnswer) {
-      btn.classList.add("bg-green-500");
-    }
-
     if (btn.innerText === selectedAnswer) {
       if (btn.innerText === currentQuestion.correctAnswer) {
         showResult(`✅ Correct!`, true);
       } else {
-        btn.classList.add("bg-red-500");
         showResult(
           `❌ Wrong! The correct answer is: ${currentQuestion.correctAnswer}`,
           false
         );
       }
     }
-    document.getElementById("choices").disabled = false;
     btn.classList.remove("hover:bg-yellow-400");
   }
 
   if (Number(selectedAnswer) === Number(currentQuestion.correctAnswer)) {
-    score++;
+    score = score + 1;
     document.getElementById("score").innerText = score;
     showResult("✅ Correct!", true);
   } else {
+    score = score - 1;
+    document.getElementById("score").innerText = score;
     showResult(
       `❌ Wrong! The correct answer is: ${currentQuestion.correctAnswer}`,
       false
     );
   }
-
-  document.getElementById("next-btn").classList.remove("hidden");
+  setTimeout(() => {
+    nextQuestion();
+  }, 1000);
 }
 
 function nextQuestion() {
