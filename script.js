@@ -45,7 +45,7 @@ function createQuestion() {
 
     return {
       type: "choice",
-      text: `${num1} ${operation} ${num2} = ?`,
+      text: `What is ${num1} ${operation} ${num2} = ?`,
       options: Array.from(options).sort(() => Math.random() - 0.5),
       correctAnswer: correctAnswer.toString(),
     };
