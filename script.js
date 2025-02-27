@@ -1,6 +1,19 @@
 let score = 0;
-
 let currentQuestion = {};
+let questions = [];
+
+async function fetchQuestions() {
+  try {
+    const response = await fetch(
+      "https://opentdb.com/api.php?amount=10&category=9&difficulty=easy"
+    );
+    const data = await response.json();
+    questions = data.results;
+    showQuestion();
+  } catch (error) {
+    console.error("Error fetching quiz data:", error);
+  }
+}
 
 function createQuestion() {
   let num1 = Math.floor(Math.random() * 10) + 1;
@@ -29,122 +42,106 @@ function createQuestion() {
   if (questionType === "input") {
     return {
       type: "input",
-      text: `What is ${num1} ${operation} ${num2} = ?`,
-      correctAnswer: correctAnswer.toString(),
+      question: `What is ${num1} ${operation} ${num2} = ?`,
+      correct_answer: correctAnswer.toString(),
     };
   } else {
-    let options = new Set([correctAnswer]);
+    let options = new Set([correctAnswer.toString()]);
     while (options.size < 4) {
       let offset = Math.floor(Math.random() * 5) + 1;
       let wrongAnswer =
-        operation === "/"
-          ? correctAnswer + Math.floor(Math.random() * 2 - 1)
-          : correctAnswer + Math.floor(Math.random() > 0.5 ? offset : -offset);
+        correctAnswer + (Math.random() > 0.5 ? offset : -offset);
       options.add(wrongAnswer.toString());
     }
-
     return {
-      type: "choice",
-      text: `What is ${num1} ${operation} ${num2} = ?`,
-      options: Array.from(options).sort(() => Math.random() - 0.5),
-      correctAnswer: correctAnswer.toString(),
+      type: "multiple",
+      question: `What is ${num1} ${operation} ${num2} = ?`,
+      correct_answer: correctAnswer.toString(),
+      incorrect_answers: Array.from(options).filter(
+        (opt) => opt !== correctAnswer.toString()
+      ),
     };
   }
 }
 
 function showQuestion() {
-  currentQuestion = createQuestion();
-
-  document.getElementById("question").innerText = currentQuestion.text;
-
-  if (currentQuestion.type === "input") {
-    document.getElementById("input-form").classList.remove("hidden");
-    document.getElementById("choices").classList.add("hidden");
+  if (questions.length === 0 || Math.random() > 0.5) {
+    currentQuestion = createQuestion();
   } else {
-    let choicesContainer = document.getElementById("choices");
-    choicesContainer.innerHTML = "";
-    currentQuestion.options.forEach((option) => {
-      const button = document.createElement("button");
-      button.innerText = option;
-      button.className =
-        "block w-full bg-gray-700 py-2 rounded hover:bg-yellow-400";
-      button.onclick = () => checkChoiceAnswer(option);
+    currentQuestion = questions.shift();
+  }
+
+  document.getElementById("question").innerHTML = decodeHtml(
+    currentQuestion.question
+  );
+  let correctAnswer = decodeHtml(currentQuestion.correct_answer);
+  let choicesContainer = document.getElementById("choices");
+  let inputForm = document.getElementById("input-form");
+  let answerInput = document.getElementById("answer");
+
+  choicesContainer.innerHTML = "";
+  inputForm.classList.add("hidden");
+  answerInput.value = "";
+
+  if (currentQuestion.type === "multiple") {
+    let options = [
+      ...currentQuestion.incorrect_answers.map(decodeHtml),
+      correctAnswer,
+    ].sort(() => Math.random() - 0.5);
+    options.forEach((option) => {
+      const button = createButton(option, () => checkChoiceAnswer(option));
       choicesContainer.appendChild(button);
     });
-
     choicesContainer.classList.remove("hidden");
-    document.getElementById("input-form").classList.add("hidden");
+  } else {
+    inputForm.classList.remove("hidden");
+    choicesContainer.classList.add("hidden");
   }
 }
 
-function showResult(message, isCorrect) {
-  let toast = document.getElementById("toast");
-  toast.innerText = message;
-  toast.classList.remove("hidden");
-  toast.style.backgroundColor = isCorrect ? "green" : "red";
+function decodeHtml(html) {
+  let txt = document.createElement("textarea");
+  txt.innerHTML = html;
+  return txt.value;
+}
 
-  setTimeout(() => {
-    toast.classList.add("hidden");
-  }, 2000);
+function createButton(text, onClick) {
+  const button = document.createElement("button");
+  button.innerText = text;
+  button.className =
+    "block w-full bg-gray-700 py-2 rounded hover:bg-yellow-400 transition";
+  button.onclick = onClick;
+  return button;
+}
+
+function checkChoiceAnswer(selectedAnswer) {
+  showResult(selectedAnswer === currentQuestion.correct_answer);
 }
 
 function checkInputAnswer(event) {
   event.preventDefault();
-  const answer = document.getElementById("answer").value;
-  if (answer === currentQuestion.correctAnswer) {
+  let userAnswer = document.getElementById("answer").value.trim().toLowerCase();
+  let correctAnswer = currentQuestion.correct_answer.toLowerCase();
+  showResult(userAnswer === correctAnswer);
+}
+
+function showResult(isCorrect) {
+  let toast = document.getElementById("toast");
+  if (isCorrect) {
     score++;
     document.getElementById("score").innerText = score;
-    showResult("✅ Correct!", true);
+    toast.innerText = "✅ Correct!";
+    toast.style.backgroundColor = "green";
   } else {
-    showResult(
-      `❌ Wrong! The correct answer is: ${currentQuestion.correctAnswer}`,
-      false
-    );
+    toast.innerText = `❌ Wrong! Correct answer: ${currentQuestion.correct_answer}`;
+    toast.style.backgroundColor = "red";
   }
-  document.getElementById("answer").disabled = true;
+
+  toast.classList.remove("hidden");
   setTimeout(() => {
-    nextQuestion();
-  }, 1000);
+    toast.classList.add("hidden");
+    showQuestion();
+  }, 2000);
 }
 
-function checkChoiceAnswer(selectedAnswer) {
-  let buttons = document.querySelectorAll("#choices button");
-  for (let btn of buttons) {
-    if (btn.innerText === selectedAnswer) {
-      if (btn.innerText === currentQuestion.correctAnswer) {
-        showResult(`✅ Correct!`, true);
-      } else {
-        showResult(
-          `❌ Wrong! The correct answer is: ${currentQuestion.correctAnswer}`,
-          false
-        );
-      }
-    }
-    btn.classList.remove("hover:bg-yellow-400");
-  }
-
-  if (Number(selectedAnswer) === Number(currentQuestion.correctAnswer)) {
-    score = score + 1;
-    document.getElementById("score").innerText = score;
-    showResult("✅ Correct!", true);
-  } else {
-    score = score - 1;
-    document.getElementById("score").innerText = score;
-    showResult(
-      `❌ Wrong! The correct answer is: ${currentQuestion.correctAnswer}`,
-      false
-    );
-  }
-  setTimeout(() => {
-    nextQuestion();
-  }, 1000);
-}
-
-function nextQuestion() {
-  document.getElementById("answer").value = "";
-  document.getElementById("answer").disabled = false;
-  document.getElementById("choices").disabled = false;
-  showQuestion();
-}
-
-showQuestion();
+window.onload = fetchQuestions;
